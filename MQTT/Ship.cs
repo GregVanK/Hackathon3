@@ -9,24 +9,16 @@ namespace MQTT
 {
     class Ship
     {
-        int x1;
-        int x2;
-        int y1;
-        int y2;
-        int length;
-        ArrayList hits = new ArrayList();
-        bool sunk =  false;
+        private int x1;
+        private int x2;
+        private int y1;
+        private int y2;
+        private int length;
+        private ArrayList hits = new ArrayList();
+        private bool sunk =  false;
 
 
-        public enum ShipType
-        {
-            Carrier,
-            Battleship,
-            Cruiser,
-            Destroyer,
-            Sub,
-
-        }
+        
 
         public Ship(int xPoint1, int xPoint2, int yPoint1, int yPoint2)
         {

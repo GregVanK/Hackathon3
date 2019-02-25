@@ -24,14 +24,15 @@ namespace MQTT
         private bool gameIsRunning = false;
         private bool respondToGameComms = false;
         private bool gameIsStarting = false;
+        private bool recievedPingResponse = false;
         public Form1()
         {
             regionName = Prompt.RequestRegionName("Region Name", "Region Name");
             fleetName = Prompt.RequestFleetName("Fleet Name", "Fleet Name");
-            enemyName = Prompt.RequestEnemyName("Enemy Name", "Enemy Name");
+            //enemyName = Prompt.RequestEnemyName("Enemy Name", "Enemy Name");
             Console.WriteLine(fleetName);
             Console.WriteLine(regionName);
-            while (fleetName == "" || regionName == "" || enemyName == "")
+            while (fleetName == "" || regionName == "")
             {
                 gameName = Prompt.RequestGameName("Game Name", "Game Name");
                 regionName = Prompt.RequestRegionName("Region", "Region Name");
@@ -45,11 +46,11 @@ namespace MQTT
 
         }
         //ip you are connecting to
-        static string  IP = "134.41.136.157";
+        static string IP = "134.41.136.157";
         //unique ID of you, must be different on other client
         string clientID = "VaughnDev";
         //extra step authentication
-        string user = "dev";  
+        string user = "dev";
         string pass = "dev1234";
         //stored data
         string chatlog = "";
@@ -57,12 +58,12 @@ namespace MQTT
         //Connect to IP
         MqttClient client = new MqttClient(IP);
 
-     
+
         void client_MqttMsgPublished(object sender, MqttMsgPublishedEventArgs e)
         {
 
         }
-        
+
 
         //Recieve message protocol
         void client_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
@@ -72,13 +73,14 @@ namespace MQTT
             //convert message string using Json converter into a Message object
             Message recievedData = JsonConvert.DeserializeObject<Message>(s);
             //Pull data from messae object
-            String output = recievedData._name +":"+ recievedData._msg;
+            String output = recievedData._name + ":" + recievedData._msg;
             Regex rx = new Regex("^[*]");
             if (!gameIsStarting)
             {
                 if (recievedData._msg.Contains("PingResponseComms"))
                 {
                     playersInGame.Add(recievedData._name);
+                    recievedPingResponse = true;
                 }
                 if (recievedData._name != fleetName)
                 {
@@ -121,18 +123,29 @@ namespace MQTT
             }
             else
             {
+                if (!gameIsRunning)
+                {
+                    Form battlefield = new GameArea_();
+                    Application.Run(battlefield);
+                    gameIsRunning = true;
+                }
+                else
+                {
+
+                }
+
                 // if game is not running
-                    // start the game
-                    // game is running to true
+                // start the game
+                // game is running to true
                 // if game is running
-                    // if message contains x or y
-                        // split message at y
-                        // talk to game w/ x y coords
+                // if message contains x or y
+                // split message at y
+                // talk to game w/ x y coords
             }
 
             if (playersInGame.Count == 2)
             {
-                if (!respondToGameComms)
+                if (!respondToGameComms && !recievedPingResponse)
                 {
                     Message gameStartComms = new Message(fleetName, $"command: GameStartComms," +
                                 $"\nregionName: [{regionName}]");
@@ -142,22 +155,22 @@ namespace MQTT
                 }
                 gameIsStarting = true;
             }
-                //if (playersInGame != null)
-                //{
-                //    for (int i = 0; i < playersInGame.Count; i++)
-                //    {
-                //        if (playersInGame[i] != recievedData._name)
-                //        {
-                //            Message messageData = new Message(fleetName, $"[{fleetName}]");
-                //            Message responseMessage = new Message(fleetName, $"responseTo: {recievedData._msg}");
-                //            string smessage = JsonConvert.SerializeObject(messageData);
-                //            string smessage2 = JsonConvert.SerializeObject(responseMessage);
-                //            //Send Json item to people subscribed to "ctrl1"
-                //            client.Publish($"battleship/{regionName}", Encoding.UTF8.GetBytes(smessage));
-                //            client.Publish($"battleship/{regionName}", Encoding.UTF8.GetBytes(smessage2));
-                //            playersInGame.Add(recievedData._name);
-                //        }
-                //    }
+            //if (playersInGame != null)
+            //{
+            //    for (int i = 0; i < playersInGame.Count; i++)
+            //    {
+            //        if (playersInGame[i] != recievedData._name)
+            //        {
+            //            Message messageData = new Message(fleetName, $"[{fleetName}]");
+            //            Message responseMessage = new Message(fleetName, $"responseTo: {recievedData._msg}");
+            //            string smessage = JsonConvert.SerializeObject(messageData);
+            //            string smessage2 = JsonConvert.SerializeObject(responseMessage);
+            //            //Send Json item to people subscribed to "ctrl1"
+            //            client.Publish($"battleship/{regionName}", Encoding.UTF8.GetBytes(smessage));
+            //            client.Publish($"battleship/{regionName}", Encoding.UTF8.GetBytes(smessage2));
+            //            playersInGame.Add(recievedData._name);
+            //        }
+            //    }
 
 
             //add output to total chat log
@@ -337,6 +350,35 @@ namespace MQTT
                 prompt.AcceptButton = confirmation;
 
                 return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+            }
+
+            public static string RequestShipDirection(string name, string caption)
+            {
+                Form prompt = new Form()
+                {
+                    Width = 500,
+                    Height = 150,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    Text = caption,
+                    StartPosition = FormStartPosition.CenterScreen
+                };
+                string buttonClicked = "";
+                Label textLabel = new Label() { Left = 50, Top = 20, Text = name };
+                Button leftButton = new Button() { Left = 50, Top = 50, Width = 50, Text = "Left", DialogResult = DialogResult.OK };
+                leftButton.Click += (sender, e) => { prompt.Close(); buttonClicked = "left"; };
+                Button rightButton = new Button() { Left = 100, Top = 50, Width = 50, Text = "Right", DialogResult = DialogResult.OK };
+                rightButton.Click += (sender, e) => { prompt.Close(); buttonClicked = "right"; };
+                Button upButton = new Button() { Left = 150, Top = 50, Width = 50, Text = "Up", DialogResult = DialogResult.OK };
+                upButton.Click += (sender, e) => { prompt.Close(); buttonClicked = "up"; };
+                Button downButton = new Button() { Left = 200, Top = 50, Width = 50, Text = "Down", DialogResult = DialogResult.OK };
+                downButton.Click += (sender, e) => { prompt.Close(); buttonClicked = "down"; };
+                prompt.Controls.Add(textLabel);
+                prompt.Controls.Add(leftButton);
+                prompt.Controls.Add(rightButton);
+                prompt.Controls.Add(upButton);
+                prompt.Controls.Add(downButton);
+                
+                return prompt.ShowDialog() == DialogResult.OK ? buttonClicked : "";
             }
         }
 
